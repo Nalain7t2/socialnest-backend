@@ -12,24 +12,27 @@ from django.db import transaction
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
-        identifier = (
-            attrs.get("username") or
-            attrs.get("email") or
-            attrs.get("identifier")
-        )
+        identifier = attrs.get("username")
         password = attrs.get("password")
 
         if not identifier or not password:
-            raise serializers.ValidationError("Both identifier and password are required")
+            raise serializers.ValidationError("Username/email and password required")
 
-        user = User.objects.filter(
-            Q(username=identifier) | Q(email=identifier)
-        ).first()
+        # Find user by email OR username
+        user = (
+            User.objects.filter(email=identifier).first()
+            or User.objects.filter(username=identifier).first()
+        )
 
         if not user:
             raise serializers.ValidationError("Invalid credentials")
 
-        user = authenticate(username=user.username, password=password)
+        # Authenticate properly
+        user = authenticate(
+            request=self.context.get("request"),
+            username=user.username,
+            password=password,
+        )
 
         if not user:
             raise serializers.ValidationError("Invalid credentials")
@@ -40,8 +43,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         })
 
         data["username"] = user.username
-        data["email"] = user.email
-
         return data
 
 class CommentSerializer(serializers.ModelSerializer):
