@@ -10,23 +10,39 @@ from django.db import transaction
 
 #  use for user validate by username or email both of them and it's store both jwt tokens
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-        token['username'] = user.username
-        return token
 
     def validate(self, attrs):
-        identifier = attrs.get("username")  
+        identifier = (
+            attrs.get("username") or
+            attrs.get("email") or
+            attrs.get("identifier")
+        )
         password = attrs.get("password")
 
-        user = User.objects.filter(email=identifier).first() or \
-               User.objects.filter(username=identifier).first()
-        if user:
-            user = authenticate(username=user.username, password=password)
+        if not identifier or not password:
+            raise serializers.ValidationError("Both identifier and password are required")
+
+        user = User.objects.filter(
+            Q(username=identifier) | Q(email=identifier)
+        ).first()
+
         if not user:
-            raise serializers.ValidationError("No active account found with the given credentials")
-        return super().validate({"username": user.username, "password": password})
+            raise serializers.ValidationError("Invalid credentials")
+
+        user = authenticate(username=user.username, password=password)
+
+        if not user:
+            raise serializers.ValidationError("Invalid credentials")
+
+        data = super().validate({
+            "username": user.username,
+            "password": password
+        })
+
+        data["username"] = user.username
+        data["email"] = user.email
+
+        return data
 
 class CommentSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
