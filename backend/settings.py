@@ -65,6 +65,7 @@ AUTHENTICATION_BACKENDS = [
 CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
 CORS_ALLOW_CREDENTIALS = True
 
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 # For development only - remove in production
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
