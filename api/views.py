@@ -16,6 +16,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
 
@@ -337,7 +338,7 @@ def CommentCreateView(request, post_id):
     serializer = CommentSerializer(comment)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
         
-    
+@csrf_exempt    
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def RegisterView(request):
